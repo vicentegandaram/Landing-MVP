@@ -1,133 +1,336 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Users, Plus, X, FileText, Send, Calendar, TrendingUp } from 'lucide-react';
-import { Layout } from '../components/Layout';
-import { ProgressBar } from '../components/ProgressBar';
+import { 
+  LogOut, Users, X, Calendar, Plus, Trash2, 
+  Scale, Ruler, Activity, ChevronRight, Clock
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { patients, nutritionist } from '../data/mockData';
+import { patients as initialPatients, nutritionist } from '../data/mockData';
+import type { Patient } from '../data/mockData';
+
+// Navigation items - only first 3 as requested
+const navItems = [
+  { id: 'patients', label: 'Pacientes', icon: Users },
+  { id: 'calendar', label: 'Calendario', icon: Calendar },
+  { id: 'home', label: 'Dashboard', icon: Users },
+];
 
 export function NutritionistDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  
+  // State
   const [showModal, setShowModal] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
-  const [planName, setPlanName] = useState('');
-  const [planDescription, setPlanDescription] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  const [showPatientDetail, setShowPatientDetail] = useState<Patient | null>(null);
+  const [modalType, setModalType] = useState<'addPatient' | 'editPatient'>('addPatient');
+  const [patients, setPatients] = useState<Patient[]>(initialPatients);
+  
+  // Form state for new/edit patient
+  const [newPatient, setNewPatient] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    birthDate: '',
+    weight: '',
+    height: '',
+  });
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  const handleAssignPlan = async () => {
-    if (!selectedPatient || !planName) return;
+  const handleAddPatient = () => {
+    if (!newPatient.name || !newPatient.email) return;
     
-    setIsSending(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSending(false);
+    const patient: Patient = {
+      id: `pat-${Date.now()}`,
+      name: newPatient.name,
+      email: newPatient.email,
+      adherence: 100,
+      lastVisit: new Date().toLocaleDateString('es-CL'),
+      avatar: newPatient.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+    };
+    
+    setPatients([...patients, patient]);
+    setNewPatient({ name: '', email: '', phone: '', address: '', birthDate: '', weight: '', height: '' });
     setShowModal(false);
-    setSelectedPatient(null);
-    setPlanName('');
-    setPlanDescription('');
   };
 
-  return (
-    <Layout title="Dashboard" showBack>
-      <div className="p-4">
-        <div className="bg-gradient-to-br from-navy to-gray-800 rounded-2xl p-5 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-mint rounded-full flex items-center justify-center text-white font-bold text-xl">
-                {nutritionist.avatar}
-              </div>
-              <div>
-                <h2 className="text-white font-semibold text-lg">{nutritionist.name}</h2>
-                <p className="text-gray-300 text-sm">{nutritionist.specialty}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium text-white"
-            >
-              <LogOut size={16} />
-              <span>Salir</span>
-            </button>
-          </div>
+  const handleDeletePatient = (patientId: string) => {
+    setPatients(patients.filter(p => p.id !== patientId));
+  };
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/10 rounded-xl p-3 text-center">
-              <Users className="mx-auto mb-1 text-mint" size={20} />
-              <p className="text-white font-semibold">{patients.length}</p>
-              <p className="text-gray-300 text-xs">Pacientes</p>
-            </div>
-            <div className="bg-white/10 rounded-xl p-3 text-center">
-              <Calendar className="mx-auto mb-1 text-mint" size={20} />
-              <p className="text-white font-semibold">12</p>
-              <p className="text-gray-300 text-xs">Consultas</p>
-            </div>
-            <div className="bg-white/10 rounded-xl p-3 text-center">
-              <TrendingUp className="mx-auto mb-1 text-mint" size={20} />
-              <p className="text-white font-semibold">85%</p>
-              <p className="text-gray-300 text-xs">Adherencia</p>
-            </div>
-          </div>
+  // Mock data for patient details (simulating real data)
+  const patientMeasurements = {
+    weight: 75.5,
+    height: 175,
+    imc: 24.7,
+    history: [
+      { date: '2026-04-08', weight: 75.5, imc: 24.7 },
+      { date: '2026-03-25', weight: 76.2, imc: 24.9 },
+      { date: '2026-03-10', weight: 77.0, imc: 25.1 },
+    ]
+  };
+
+  const patientAppointments = [
+    { id: 1, date: '2026-04-15', time: '10:00', type: 'Control', status: 'scheduled' },
+    { id: 2, date: '2026-04-08', time: '11:00', type: 'Evaluación', status: 'completed' },
+    { id: 3, date: '2026-03-25', time: '09:30', type: 'Seguimiento', status: 'completed' },
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="w-64 bg-navy text-white flex flex-col">
+        <div className="p-6 border-b border-white/10">
+          <h1 className="text-2xl font-bold">OptiMeal</h1>
+          <p className="text-gray-400 text-sm">Nutricionista</p>
         </div>
 
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-navy">Mis Pacientes</h3>
+        <nav className="flex-1 p-4 space-y-1">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-gray-300 hover:bg-white/10"
+            >
+              <item.icon size={20} />
+              <span className="font-medium">{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-white/10">
           <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-mint text-white rounded-lg font-medium text-sm hover:bg-mint/90 transition-colors"
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-white/10 rounded-xl transition"
           >
-            <Plus size={18} />
-            Nueva Pauta
+            <LogOut size={20} />
+            <span className="font-medium">Cerrar sesión</span>
           </button>
         </div>
+      </aside>
 
-        <div className="space-y-3">
-          {patients.map((patient) => (
-            <motion.div
-              key={patient.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-navy">Mis Pacientes</h2>
+              <p className="text-gray-500 text-sm">{nutritionist.name} - {nutritionist.specialty}</p>
+            </div>
+            <button
+              onClick={() => { setModalType('addPatient'); setNewPatient({ name: '', email: '', phone: '', address: '', birthDate: '', weight: '', height: '' }); setShowModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-mint text-white rounded-xl font-medium hover:bg-mint/90 transition"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-mint to-emerald-600 rounded-full flex items-center justify-center font-semibold text-white text-lg">
-                  {patient.avatar}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-navy">{patient.name}</h4>
-                  <p className="text-sm text-gray-500">{patient.email}</p>
-                </div>
-                <span className="text-xs text-gray-400">{patient.lastVisit}</span>
-              </div>
-              <ProgressBar label="Adherencia al plan" percentage={patient.adherence} />
-              <button
-                onClick={() => {
-                  setSelectedPatient(patient.id);
-                  setShowModal(true);
-                }}
-                className="w-full mt-2 py-2 text-sm font-medium text-mint hover:bg-mint/5 rounded-lg transition-colors"
-              >
-                Asignar nueva pauta
-              </button>
-            </motion.div>
-          ))}
+              <Plus size={18} />
+              Nuevo Paciente
+            </button>
+          </div>
+        </header>
+
+        {/* Stats */}
+        <div className="px-8 py-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-xl p-4 shadow-sm border">
+              <p className="text-gray-500 text-sm">Total Pacientes</p>
+              <p className="text-2xl font-bold text-navy">{patients.length}</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border">
+              <p className="text-gray-500 text-sm">Citas Hoy</p>
+              <p className="text-2xl font-bold text-navy">4</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border">
+              <p className="text-gray-500 text-sm">Esta Semana</p>
+              <p className="text-2xl font-bold text-navy">18</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border">
+              <p className="text-gray-500 text-sm">Adherencia</p>
+              <p className="text-2xl font-bold text-mint">85%</p>
+            </div>
+          </div>
+
+          {/* Patients Table */}
+          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paciente</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adherencia</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Última Visita</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {patients.map((patient) => (
+                  <motion.tr 
+                    key={patient.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="hover:bg-gray-50"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-mint rounded-full flex items-center justify-center font-bold text-white">
+                          {patient.avatar}
+                        </div>
+                        <span className="font-medium text-navy">{patient.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{patient.email}</td>
+                    <td className="px-6 py-4 text-gray-600">+56 9 1234 5678</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        patient.adherence >= 70 ? 'bg-green-100 text-green-700' : 
+                        patient.adherence >= 40 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {patient.adherence}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">{patient.lastVisit}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setShowPatientDetail(patient)}
+                          className="flex items-center gap-1 text-sm text-mint font-medium hover:underline"
+                        >
+                          Ver <ChevronRight size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeletePatient(patient.id)}
+                          className="p-1 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+      </main>
 
-        <button
-          onClick={() => navigate('/processing')}
-          className="w-full mt-6 bg-navy text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-navy/90 transition-colors shadow-lg"
-        >
-          Simular Sync
-        </button>
-      </div>
-
+      {/* Patient Detail Modal */}
       <AnimatePresence>
-        {showModal && (
+        {showPatientDetail && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowPatientDetail(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="bg-navy text-white p-6 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-mint rounded-full flex items-center justify-center font-bold text-white text-2xl">
+                      {showPatientDetail.avatar}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">{showPatientDetail.name}</h2>
+                      <p className="text-gray-300">{showPatientDetail.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowPatientDetail(null)}
+                    className="p-2 hover:bg-white/10 rounded-lg"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Measurements */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gray-50 rounded-xl p-4 text-center">
+                    <Scale className="mx-auto mb-2 text-navy" size={24} />
+                    <p className="text-2xl font-bold text-navy">{patientMeasurements.weight} kg</p>
+                    <p className="text-gray-500 text-sm">Peso actual</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4 text-center">
+                    <Ruler className="mx-auto mb-2 text-navy" size={24} />
+                    <p className="text-2xl font-bold text-navy">{patientMeasurements.height} cm</p>
+                    <p className="text-gray-500 text-sm">Altura</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4 text-center">
+                    <Activity className="mx-auto mb-2 text-navy" size={24} />
+                    <p className="text-2xl font-bold text-mint">{patientMeasurements.imc}</p>
+                    <p className="text-gray-500 text-sm">IMC</p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="bg-mint/10 border border-mint rounded-xl p-4 mb-6">
+                  <p className="font-bold text-navy">Estado Nutricional: <span className="text-mint">Peso Normal</span></p>
+                </div>
+
+                {/* Measurements History */}
+                <div className="mb-6">
+                  <h3 className="font-bold text-navy mb-3">Historial de Mediciones</h3>
+                  <div className="space-y-2">
+                    {patientMeasurements.history.map((m, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span className="text-gray-600">{new Date(m.date).toLocaleDateString('es-CL')}</span>
+                        <div className="flex gap-4 text-sm">
+                          <span className="text-navy">{m.weight}kg</span>
+                          <span className="text-mint font-medium">IMC {m.imc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Appointments */}
+                <div>
+                  <h3 className="font-bold text-navy mb-3">Citas</h3>
+                  <div className="space-y-2">
+                    {patientAppointments.map((apt) => (
+                      <div 
+                        key={apt.id}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          apt.status === 'scheduled' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Clock size={18} className={apt.status === 'scheduled' ? 'text-blue-500' : 'text-gray-400'} />
+                          <div>
+                            <p className="font-medium text-navy">{new Date(apt.date).toLocaleDateString('es-CL')}</p>
+                            <p className="text-gray-500 text-sm">{apt.time} - {apt.type}</p>
+                          </div>
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          apt.status === 'scheduled' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          {apt.status === 'scheduled' ? 'Próxima' : 'Completada'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Patient Modal */}
+      <AnimatePresence>
+        {showModal && modalType === 'addPatient' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -140,101 +343,84 @@ export function NutritionistDashboard() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 w-full max-w-md"
+              className="bg-white rounded-2xl p-6 w-full max-w-lg"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-navy flex items-center gap-2">
-                  <FileText className="text-mint" size={24} />
-                  {selectedPatient ? 'Asignar Pauta' : 'Nueva Pauta'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X size={20} className="text-gray-400" />
+                <h3 className="text-xl font-bold text-navy">Nuevo Paciente</h3>
+                <button onClick={() => setShowModal(false)}>
+                  <X size={24} className="text-gray-400" />
                 </button>
               </div>
 
-              {selectedPatient && !planName && (
-                <div className="mb-4 p-3 bg-mint/10 rounded-xl">
-                  <p className="text-sm text-gray-600">Asignando a:</p>
-                  <p className="font-semibold text-navy">
-                    {patients.find(p => p.id === selectedPatient)?.name}
-                  </p>
-                </div>
-              )}
-
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre del Plan
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
                   <input
                     type="text"
-                    value={planName}
-                    onChange={(e) => setPlanName(e.target.value)}
-                    placeholder="Ej: Plan Semana 1"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-mint focus:border-transparent"
+                    value={newPatient.name}
+                    onChange={(e) => setNewPatient({...newPatient, name: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                    placeholder="Ej: Juan Pérez"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descripción
-                  </label>
-                  <textarea
-                    value={planDescription}
-                    onChange={(e) => setPlanDescription(e.target.value)}
-                    placeholder="Agrega notas o instrucciones..."
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-mint focus:border-transparent resize-none"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    value={newPatient.email}
+                    onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                    placeholder="juan@email.com"
                   />
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h4 className="font-medium text-gray-700 mb-2">Resumen de macros</h4>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="bg-white rounded-lg p-2">
-                      <p className="text-mint font-bold">150g</p>
-                      <p className="text-xs text-gray-500">Proteína</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-2">
-                      <p className="text-blue-500 font-bold">280g</p>
-                      <p className="text-xs text-gray-500">Carbohidratos</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-2">
-                      <p className="text-red-500 font-bold">60g</p>
-                      <p className="text-xs text-gray-500">Grasas</p>
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                  <input
+                    type="tel"
+                    value={newPatient.phone}
+                    onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                    placeholder="+56 9 1234 5678"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Peso (kg)</label>
+                    <input
+                      type="number"
+                      value={newPatient.weight}
+                      onChange={(e) => setNewPatient({...newPatient, weight: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                      placeholder="75"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Altura (cm)</label>
+                    <input
+                      type="number"
+                      value={newPatient.height}
+                      onChange={(e) => setNewPatient({...newPatient, height: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl"
+                      placeholder="175"
+                    />
                   </div>
                 </div>
 
                 <button
-                  onClick={handleAssignPlan}
-                  disabled={!planName || isSending}
-                  className="w-full bg-mint text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-mint/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleAddPatient}
+                  disabled={!newPatient.name || !newPatient.email}
+                  className="w-full bg-mint text-white font-semibold py-4 rounded-xl hover:bg-mint/90 transition disabled:opacity-50"
                 >
-                  {isSending ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                      />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={18} />
-                      Asignar Pauta
-                    </>
-                  )}
+                  Crear Paciente
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </Layout>
+    </div>
   );
 }
