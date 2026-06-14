@@ -18,7 +18,7 @@ export function PatientDashboard() {
   const [selectedDay, setSelectedDay] = useState<DayPlan | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('optimeal_plan');
+    const stored = localStorage.getItem('levia_plan');
     if (stored) {
       setWeeklyPlan(weeklyPlanTemplate);
       setHasPlan(true);
@@ -46,7 +46,7 @@ export function PatientDashboard() {
     setHasPlan(true);
     setIsLoading(false);
     setLoadingMessage('');
-    localStorage.setItem('optimeal_plan', JSON.stringify({ uploaded: true }));
+    localStorage.setItem('levia_plan', JSON.stringify({ uploaded: true }));
   }, []);
 
   const handleLogout = () => {

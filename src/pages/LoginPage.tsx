@@ -40,7 +40,7 @@ export function LoginPage() {
           transition={{ delay: 0.3 }}
           className="text-5xl font-bold text-white mb-3 tracking-tight"
         >
-          OptiMeal
+          Levia
         </motion.h1>
 
         <motion.p

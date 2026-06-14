@@ -32,7 +32,7 @@ export function PatientExperience() {
   const [showWeeklyPlan, setShowWeeklyPlan] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('optimeal_plan');
+    const stored = localStorage.getItem('levia_plan');
     if (stored) {
       setExtractedData(JSON.parse(stored));
       setHasPlan(true);
@@ -44,7 +44,7 @@ export function PatientExperience() {
     try {
       const data = await parseNutritionPlan(file);
       setExtractedData(data);
-      localStorage.setItem('optimeal_plan', JSON.stringify(data));
+      localStorage.setItem('levia_plan', JSON.stringify(data));
       setHasPlan(true);
     } catch (error) {
       console.error('Error parsing nutrition plan:', error);

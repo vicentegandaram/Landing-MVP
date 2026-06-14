@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('optimeal_user');
+    const stored = localStorage.getItem('levia_user');
     if (stored) {
       setUser(JSON.parse(stored));
     }
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: nutritionist.name,
           role: 'nutritionist',
           avatar: nutritionist.avatar,
-          email: 'pamela.angelus@optimeal.cl',
+          email: 'pamela.angelus@levia.cl',
         }
       : {
           id: patients[0].id,
@@ -48,13 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
     setUser(userData);
-    localStorage.setItem('optimeal_user', JSON.stringify(userData));
+    localStorage.setItem('levia_user', JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('optimeal_user');
-    localStorage.removeItem('optimeal_plan');
+    localStorage.removeItem('levia_user');
+    localStorage.removeItem('levia_plan');
   };
 
   return (

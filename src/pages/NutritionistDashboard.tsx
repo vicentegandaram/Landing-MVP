@@ -99,7 +99,7 @@ export function NutritionistDashboard() {
       {/* Sidebar */}
       <aside className="w-64 bg-navy text-white flex flex-col">
         <div className="p-6 border-b border-white/10">
-          <h1 className="text-2xl font-bold">OptiMeal</h1>
+          <h1 className="text-2xl font-bold">Levia</h1>
           <p className="text-gray-400 text-sm">Nutricionista</p>
         </div>
 
